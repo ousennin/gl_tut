@@ -1,21 +1,9 @@
 package anonymous.gl
 
 import android.content.Context
-import android.opengl.GLES20.GL_COLOR_BUFFER_BIT
-import android.opengl.GLES20.GL_FLOAT
-import android.opengl.GLES20.GL_LINES
-import android.opengl.GLES20.GL_POINTS
-import android.opengl.GLES20.GL_TRIANGLE_FAN
-import android.opengl.GLES20.glClear
-import android.opengl.GLES20.glClearColor
-import android.opengl.GLES20.glDrawArrays
-import android.opengl.GLES20.glEnableVertexAttribArray
-import android.opengl.GLES20.glGetAttribLocation
-import android.opengl.GLES20.glGetUniformLocation
-import android.opengl.GLES20.glUseProgram
-import android.opengl.GLES20.glVertexAttribPointer
-import android.opengl.GLES20.glViewport
+import android.opengl.GLES20.*
 import android.opengl.GLSurfaceView
+import android.opengl.Matrix
 import anonymous.gl.utils.ShaderHelper
 import anonymous.gl.utils.TextResourceReader
 import java.nio.ByteBuffer
@@ -38,22 +26,19 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private val tableVerticesWithTriangles = floatArrayOf(
         // Order of coordinates: X, Y, R, G, B
-
         // Triangle Fan
         0f, 0f, 1f, 1f, 1f,
-        -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-        0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-        0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-        -0.5f, 0.5f, 0.7f, 0.7f, 0.7f,
-        -0.5f, -0.5f, 0.7f, 0.7f, 0.7f,
-
+        -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+        0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+        0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+        -0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
+        -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
         // Line 1
         -0.5f, 0f, 1f, 0f, 0f,
         0.5f, 0f, 1f, 0f, 0f,
-
         // Mallets
-        0f, -0.25f, 0f, 0f, 1f,
-        0f, 0.25f, 1f, 0f, 0f
+        0f, -0.4f, 0f, 0f, 1f,
+        0f, 0.4f, 1f, 0f, 0f
     )
 
     private val projectionMatrix = FloatArray(16)
@@ -120,12 +105,20 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         glViewport(0, 0, width, height)
         val aspectRatio = if (width > height) {
-            widt
+            width.toFloat() / height
+        } else {
+            height.toFloat() / width
+        }
+        if (width > height) {
+            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f)
+        } else {
+            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f)
         }
     }
 
     override fun onDrawFrame(gl: GL10?) {
         glClear(GL_COLOR_BUFFER_BIT)
+        glUniformMatrix4fv(uMatrixLocation, 1, false, projectionMatrix, 0)
 
         glDrawArrays(GL_TRIANGLE_FAN, 0, 6)
 

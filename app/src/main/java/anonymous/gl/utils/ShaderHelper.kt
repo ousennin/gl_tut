@@ -52,6 +52,17 @@ object ShaderHelper {
         return programObjectId
     }
 
+    fun buildProgram(vertexShaderSource: String, fragmentShaderSource: String): Int {
+        val vertexShader = compileVertexShader(vertexShaderSource)
+        val fragmentShader = compileFragmentShader(fragmentShaderSource)
+
+        val program = linkProgram(vertexShader, fragmentShader)
+
+        isProgramValid(program)
+
+        return program
+    }
+
     private fun compileShader(type: Int, shaderCode: String): Int {
         val shaderObjectId = glCreateShader(type)
         if (shaderObjectId == 0) {

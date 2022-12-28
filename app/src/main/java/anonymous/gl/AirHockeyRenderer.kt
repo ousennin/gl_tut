@@ -11,6 +11,7 @@ import android.opengl.GLES20.glClearColor
 import android.opengl.GLES20.glDrawArrays
 import android.opengl.GLES20.glEnableVertexAttribArray
 import android.opengl.GLES20.glGetAttribLocation
+import android.opengl.GLES20.glGetUniformLocation
 import android.opengl.GLES20.glUseProgram
 import android.opengl.GLES20.glVertexAttribPointer
 import android.opengl.GLES20.glViewport
@@ -31,7 +32,7 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         const val STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT
 
         const val A_COLOR = "a_Color"
-        const val U_COLOR = "u_Color"
+        const val U_MATRIX = "u_Matrix"
         const val A_POSITION = "a_Position"
     }
 
@@ -55,6 +56,8 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         0f, 0.25f, 1f, 0f, 0f
     )
 
+    private val projectionMatrix = FloatArray(16)
+
     private val vertexData: FloatBuffer =
         ByteBuffer.allocateDirect(tableVerticesWithTriangles.size * BYTES_PER_FLOAT)
             .order(ByteOrder.nativeOrder())
@@ -71,6 +74,7 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private var aColorLocation: Int = 0
     private var aPositionLocation: Int = 0
+    private var uMatrixLocation: Int = 0
 
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -109,10 +113,15 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
             vertexData
         )
         glEnableVertexAttribArray(aColorLocation)
+
+        uMatrixLocation = glGetUniformLocation(program, U_MATRIX)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         glViewport(0, 0, width, height)
+        val aspectRatio = if (width > height) {
+            widt
+        }
     }
 
     override fun onDrawFrame(gl: GL10?) {

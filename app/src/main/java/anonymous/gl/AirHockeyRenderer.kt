@@ -17,7 +17,11 @@ import android.opengl.GLES20.glUseProgram
 import android.opengl.GLES20.glVertexAttribPointer
 import android.opengl.GLES20.glViewport
 import android.opengl.GLSurfaceView
-import android.opengl.Matrix
+import android.opengl.Matrix.multiplyMM
+import android.opengl.Matrix.rotateM
+import android.opengl.Matrix.setIdentityM
+import android.opengl.Matrix.translateM
+import anonymous.gl.utils.MatrixHelper.perspectiveM
 import anonymous.gl.utils.ShaderHelper
 import anonymous.gl.utils.TextResourceReader
 import java.nio.ByteBuffer
@@ -26,9 +30,10 @@ import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
+
 class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private companion object {
-        const val POSITION_COMPONENT_COUNT = 2
+        const val POSITION_COMPONENT_COUNT = 4
         const val COLOR_COMPONENT_COUNT = 3
         const val BYTES_PER_FLOAT = 4
         const val STRIDE = (POSITION_COMPONENT_COUNT + COLOR_COMPONENT_COUNT) * BYTES_PER_FLOAT
@@ -39,23 +44,27 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     }
 
     private val tableVerticesWithTriangles = floatArrayOf(
-        // Order of coordinates: X, Y, R, G, B
+        // Order of coordinates: X, Y, Z, W, R, G, B
+
         // Triangle Fan
-        0f, 0f, 1f, 1f, 1f,
-        -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
-        0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
-        0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
-        -0.5f, 0.8f, 0.7f, 0.7f, 0.7f,
-        -0.5f, -0.8f, 0.7f, 0.7f, 0.7f,
+        0f, 0f, 0f, 1.5f, 1f, 1f, 1f,
+        -0.5f, -0.8f, 0f, 1f, 0.7f, 0.7f, 0.7f,
+        0.5f, -0.8f, 0f, 1f, 0.7f, 0.7f, 0.7f,
+        0.5f, 0.8f, 0f, 2f, 0.7f, 0.7f, 0.7f,
+        -0.5f, 0.8f, 0f, 2f, 0.7f, 0.7f, 0.7f,
+        -0.5f, -0.8f, 0f, 1f, 0.7f, 0.7f, 0.7f,
+
         // Line 1
-        -0.5f, 0f, 1f, 0f, 0f,
-        0.5f, 0f, 1f, 0f, 0f,
+        -0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
+        0.5f, 0f, 0f, 1.5f, 1f, 0f, 0f,
+
         // Mallets
-        0f, -0.4f, 0f, 0f, 1f,
-        0f, 0.4f, 1f, 0f, 0f
+        0f, -0.4f, 0f, 1.25f, 0f, 0f, 1f,
+        0f, 0.4f, 0f, 1.75f, 1f, 0f, 0f
     )
 
     private val projectionMatrix = FloatArray(16)
+    private val modelMatrix = FloatArray(16)
 
     private val vertexData: FloatBuffer =
         ByteBuffer.allocateDirect(tableVerticesWithTriangles.size * BYTES_PER_FLOAT)
@@ -118,35 +127,20 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         glViewport(0, 0, width, height)
-        val ratio = 0.6f
-        val aspectRatio = if (width > height) {
-            width.toFloat() / height
-        } else {
-            height.toFloat() / width
-        }
-        if (width > height) {
-            Matrix.orthoM(
-                projectionMatrix,
-                0,
-                -aspectRatio * ratio,
-                aspectRatio * ratio,
-                -1f * ratio,
-                1f * ratio,
-                -1f * ratio,
-                1f * ratio
-            )
-        } else {
-            Matrix.orthoM(
-                projectionMatrix,
-                0,
-                -1f * ratio,
-                1f * ratio,
-                -aspectRatio * ratio,
-                aspectRatio * ratio,
-                -1f * ratio,
-                1f * ratio
-            )
-        }
+
+        perspectiveM(
+            projectionMatrix, 45f, width.toFloat()
+                / height.toFloat(), 1f, 10f
+        )
+
+        setIdentityM(modelMatrix, 0)
+
+        translateM(modelMatrix, 0, 0f, 0f, -2.5f)
+        rotateM(modelMatrix, 0, -60f, 1f, 0f, 0f)
+
+        val temp = FloatArray(16)
+        multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0)
+        System.arraycopy(temp, 0, projectionMatrix, 0, temp.size)
     }
 
     override fun onDrawFrame(gl: GL10?) {

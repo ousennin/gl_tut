@@ -15,7 +15,7 @@ class MainActivity : AppCompatActivity() {
         val supportsEs2 = activityManager.deviceConfigurationInfo.reqGlEsVersion >= 0x20000
         if (supportsEs2) {
             glSurfaceView.setEGLContextClientVersion(2)
-            glSurfaceView.setRenderer(LessonOneRenderer())
+            glSurfaceView.setRenderer(AirHockeyRenderer(this))
         } else {
             return
         }

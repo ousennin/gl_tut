@@ -31,6 +31,7 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private lateinit var colorShaderProgram: ColorShaderProgram
 
     private var texture: Int = 0
+    private var texture2: Int = 0
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
@@ -42,6 +43,7 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         colorShaderProgram = ColorShaderProgram(context)
 
         texture = TextureHelper.loadTexture(context, R.drawable.air_hockey_surface)
+        texture2 = TextureHelper.loadTexture(context, R.drawable.texture2)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -65,7 +67,7 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         glClear(GL_COLOR_BUFFER_BIT)
 
         textureShaderProgram.useProgram()
-        textureShaderProgram.setUniforms(projectionMatrix, texture)
+        textureShaderProgram.setUniforms(projectionMatrix, texture, texture2)
         table.bindData(textureShaderProgram)
         table.draw()
 

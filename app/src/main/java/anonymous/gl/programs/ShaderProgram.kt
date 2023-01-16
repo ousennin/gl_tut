@@ -19,6 +19,8 @@ open class ShaderProgram(
         const val A_POSITION = "a_Position"
         const val A_COLOR = "a_Color"
         const val A_TEXTURE_COORDINATES = "a_TextureCoordinates"
+
+        const val U_COLOR = "u_Color"
     }
 
     protected val program: Int = ShaderHelper.buildProgram(

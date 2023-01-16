@@ -2,27 +2,26 @@ package anonymous.gl.objects
 
 import anonymous.gl.data.VertexArray
 import anonymous.gl.programs.ColorShaderProgram
+import anonymous.gl.utils.geometry.Cylinder
 import anonymous.gl.utils.geometry.ObjectBuilder
 import anonymous.gl.utils.geometry.Point
 
-class Mallet(
+class Puck(
     val radius: Float,
     val height: Float,
-    numPointsAroundMallet: Int,
+    numPointsAroundPuck: Int,
 ) {
-    private companion object {
-        const val POSITION_COMPONENT_COUNT = 3;
+    companion object {
+        private const val POSITION_COMPONENT_COUNT = 3
     }
 
     private val vertexArray: VertexArray
     private val drawList: List<ObjectBuilder.DrawCommand>
 
     init {
-        val generatedData = ObjectBuilder.createMallet(
-            Point(0f, 0f, 0f),
-            radius,
-            height,
-            numPointsAroundMallet,
+        val generatedData = ObjectBuilder.createPuck(
+            Cylinder(Point(0f, 0f, 0f), radius, height),
+            numPointsAroundPuck
         )
         vertexArray = VertexArray(generatedData.vertexData)
         drawList = generatedData.drawList

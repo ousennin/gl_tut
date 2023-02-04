@@ -26,6 +26,8 @@ import anonymous.gl.utils.geometry.Point
 import anonymous.gl.utils.geometry.Ray
 import anonymous.gl.utils.geometry.Sphere
 import anonymous.gl.utils.geometry.Vector
+import java.lang.Float.max
+import java.lang.Float.min
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -37,6 +39,11 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val viewProjectionMatrix = FloatArray(16)
     private val modelViewProjectionMatrix = FloatArray(16)
     private val invertedViewProjectionMatrix = FloatArray(16)
+
+    private val leftBound = -0.5f
+    private val rightBound = 0.5f
+    private val farBound = -0.8f
+    private val nearBound = 0.5f
 
     private lateinit var table: Table
     private lateinit var mallet: Mallet
@@ -50,6 +57,9 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     private var isMalletPressed = false
     private lateinit var blueMalletPosition: Point
+    private lateinit var previousBlueMalletPosition: Point
+    private lateinit var puckPosition: Point
+    private lateinit var puckVector: Vector
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
@@ -64,6 +74,9 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         texture = TextureHelper.loadTexture(context, R.drawable.air_hockey_surface)
         texture2 = TextureHelper.loadTexture(context, R.drawable.texture2)
         blueMalletPosition = Point(0f, mallet.height / 2f, 0.4f)
+        previousBlueMalletPosition = blueMalletPosition
+        puckPosition = Point(0f, puck.height / 2f, 0f)
+        puckVector = Vector(0f, 0f, 0f)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -78,6 +91,25 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     override fun onDrawFrame(gl: GL10?) {
         glClear(GL_COLOR_BUFFER_BIT)
+
+        puckPosition = puckPosition.translate(puckVector)
+        if (puckPosition.x < leftBound + puck.radius
+            || puckPosition.x > rightBound - puck.radius
+        ) {
+            puckVector = Vector(-puckVector.x, puckVector.y, puckVector.z)
+            puckVector = puckVector.scale(0.9f)
+        }
+        if (puckPosition.z < farBound + puck.radius ||
+            puckPosition.z > nearBound - puck.radius
+        ) {
+            puckVector = Vector(puckVector.x, puckVector.y, -puckVector.z)
+            puckVector = puckVector.scale(0.9f)
+        }
+        puckPosition = Point(
+            clamp(puckPosition.x, leftBound + puck.radius, rightBound - puck.radius),
+            puckPosition.y,
+            clamp(puckPosition.z, farBound + puck.radius, nearBound - puck.radius)
+        )
 
         multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
         invertM(invertedViewProjectionMatrix, 0, viewProjectionMatrix, 0)
@@ -98,7 +130,7 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         colorShaderProgram.setUniforms(modelViewProjectionMatrix, 0f, 0f, 1f)
         mallet.draw()
 
-        positionObjectInScene(0f, puck.height / 2f, 0f)
+        positionObjectInScene(puckPosition.x, puckPosition.y, puckPosition.z)
         colorShaderProgram.setUniforms(modelViewProjectionMatrix, 0.8f, 0.8f, 1f)
         puck.bindData(colorShaderProgram)
         puck.draw()
@@ -137,7 +169,26 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
                 Vector(0f, 1f, 0f)
             )
             val touchedPoint: Point = Geometry.intersectionPoint(ray, plane)
-            blueMalletPosition = Point(touchedPoint.x, mallet.height / 2f, touchedPoint.z)
+            blueMalletPosition = Point(
+                clamp(
+                    touchedPoint.x,
+                    leftBound + mallet.radius,
+                    rightBound - mallet.radius
+                ),
+                mallet.height / 2f,
+                clamp(
+                    touchedPoint.z,
+                    0f + mallet.radius,
+                    nearBound - mallet.radius,
+                )
+            )
+            val distance = Geometry.vectorBetween(blueMalletPosition, puckPosition).length
+            if (distance < (puck.radius + mallet.radius)) {
+                puckVector = Geometry.vectorBetween(
+                    previousBlueMalletPosition,
+                    blueMalletPosition,
+                )
+            }
         }
     }
 
@@ -165,5 +216,9 @@ class AirHockeyRenderer(private val context: Context) : GLSurfaceView.Renderer {
         vector[0] /= vector[3]
         vector[1] /= vector[3]
         vector[2] /= vector[3]
+    }
+
+    private fun clamp(value: Float, min: Float, max: Float): Float {
+        return min(max, max(value, min))
     }
 }

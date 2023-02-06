@@ -19,6 +19,11 @@ import javax.microedition.khronos.opengles.GL10
 
 
 class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
+    companion object {
+        private const val angleVarianceInDegrees: Float = 5f
+        private const val speedVariance = 1f
+    }
+
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
     private val viewProjectionMatrix = FloatArray(16)
@@ -42,17 +47,23 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
         redParticleShooter = ParticleShooter(
             Point(-1f, 0f, 0f),
             particleDirection,
-            Color.rgb(255, 50, 5)
+            Color.rgb(255, 50, 5),
+            angleVarianceInDegrees,
+            speedVariance,
         )
         greenParticleShooter = ParticleShooter(
             Point(0f, 0f, 0f),
             particleDirection,
-            Color.rgb(25, 255, 25)
+            Color.rgb(25, 255, 25),
+            angleVarianceInDegrees,
+            speedVariance,
         )
         blueParticleShooter = ParticleShooter(
             Point(1f, 0f, 0f),
             particleDirection,
-            Color.rgb(5, 50, 255)
+            Color.rgb(5, 50, 255),
+            angleVarianceInDegrees,
+            speedVariance,
         )
     }
 

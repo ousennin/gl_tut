@@ -21,6 +21,11 @@ open class ShaderProgram(
         const val A_TEXTURE_COORDINATES = "a_TextureCoordinates"
 
         const val U_COLOR = "u_Color"
+
+        const val U_TIME = "u_Time"
+
+        const val A_DIRECTION_VECTOR = "a_DirectionVector"
+        const val A_PARTICLE_START_TIME = "a_ParticleStartTime"
     }
 
     protected val program: Int = ShaderHelper.buildProgram(

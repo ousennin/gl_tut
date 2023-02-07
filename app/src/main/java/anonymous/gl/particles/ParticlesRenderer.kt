@@ -2,16 +2,22 @@ package anonymous.gl.particles
 
 import android.content.Context
 import android.graphics.Color
+import android.opengl.GLES20.GL_BLEND
 import android.opengl.GLES20.GL_COLOR_BUFFER_BIT
+import android.opengl.GLES20.GL_ONE
+import android.opengl.GLES20.glBlendFunc
 import android.opengl.GLES20.glClear
 import android.opengl.GLES20.glClearColor
+import android.opengl.GLES20.glEnable
 import android.opengl.GLES20.glViewport
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import anonymous.gl.R
 import anonymous.gl.particles.objects.ParticleShooter
 import anonymous.gl.particles.objects.ParticleSystem
 import anonymous.gl.particles.programs.ParticleShaderProgram
 import anonymous.gl.utils.MatrixHelper
+import anonymous.gl.utils.TextureHelper
 import anonymous.gl.utils.geometry.Point
 import anonymous.gl.utils.geometry.Vector
 import javax.microedition.khronos.egl.EGLConfig
@@ -34,13 +40,18 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private lateinit var greenParticleShooter: ParticleShooter
     private lateinit var blueParticleShooter: ParticleShooter
 
+    private var texture: Int = 0
+
     private var globalStartTime: Long = 0L
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
 
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_ONE, GL_ONE)
+
         particleShaderProgram = ParticleShaderProgram(context)
-        particleSystem = ParticleSystem(1000)
+        particleSystem = ParticleSystem(10000)
         globalStartTime = System.nanoTime()
 
         val particleDirection = Vector(0f, 0.5f, 0f)
@@ -65,6 +76,7 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
             angleVarianceInDegrees,
             speedVariance,
         )
+        texture = TextureHelper.loadTexture(context, R.drawable.particle_texture)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -92,7 +104,7 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
         blueParticleShooter.addParticles(particleSystem, currentTime, 5)
 
         particleShaderProgram.useProgram()
-        particleShaderProgram.setUniforms(viewProjectionMatrix, currentTime)
+        particleShaderProgram.setUniforms(viewProjectionMatrix, currentTime, texture)
         particleSystem.bindData(particleShaderProgram)
         particleSystem.draw()
     }

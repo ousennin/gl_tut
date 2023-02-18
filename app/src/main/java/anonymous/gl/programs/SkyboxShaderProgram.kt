@@ -9,13 +9,11 @@ import android.opengl.GLES20.glGetAttribLocation
 import android.opengl.GLES20.glGetUniformLocation
 import android.opengl.GLES20.glUniform1i
 import android.opengl.GLES20.glUniformMatrix4fv
-import androidx.annotation.RawRes
+import anonymous.gl.R
 
 class SkyboxShaderProgram(
     context: Context,
-    @RawRes vertexShaderId: Int,
-    @RawRes fragmentShaderId: Int,
-) : ShaderProgram(context, vertexShaderId, fragmentShaderId) {
+) : ShaderProgram(context, R.raw.skybox_vertex_shader, R.raw.skybox_fragment_shader) {
     private val uMatrixLocation = glGetUniformLocation(program, U_MATRIX)
     private val uTextureUnitLocation = glGetUniformLocation(program, U_TEXTURE_UNIT)
     val aPositionLocation = glGetAttribLocation(program, A_POSITION)

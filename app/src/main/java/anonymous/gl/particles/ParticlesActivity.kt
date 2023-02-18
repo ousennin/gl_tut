@@ -5,6 +5,9 @@ import android.app.ActivityManager
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.View
+import android.view.View.OnTouchListener
 import androidx.appcompat.app.AppCompatActivity
 
 class ParticlesActivity : AppCompatActivity() {
@@ -24,6 +27,35 @@ class ParticlesActivity : AppCompatActivity() {
         } else {
             return
         }
+        glSurfaceView.setOnTouchListener(object : OnTouchListener {
+            private var previousX: Float = 0f
+            private var previousY: Float = 0f
+
+            override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                return when {
+                    event != null -> when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            previousX = event.x
+                            previousY = event.y
+                            true
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val deltaX = event.x - previousX
+                            val deltaY = event.y - previousY
+                            previousX = event.x
+                            previousY = event.y
+                            glSurfaceView.queueEvent {
+                                renderer.handleTouchDrag(deltaX, deltaY)
+                            }
+                            true
+                        }
+                        else -> false
+                    }
+                    else -> false
+                }
+            }
+
+        })
         setContentView(glSurfaceView)
     }
 

@@ -52,6 +52,9 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private lateinit var skybox: Skybox
     private var skyboxTexture = 0
 
+    private var xRotation: Float = 0f
+    private var yRotation: Float = 0f
+
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
 
@@ -123,8 +126,21 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
         drawParticles()
     }
 
+    fun handleTouchDrag(deltaX: Float, deltaY: Float) {
+        xRotation += deltaX / 16f
+        yRotation += deltaY / 16f
+
+        if (yRotation < -90) {
+            yRotation = -90f
+        } else if (yRotation > 90f) {
+            yRotation = 90f
+        }
+    }
+
     private fun drawSkybox() {
         Matrix.setIdentityM(viewMatrix, 0)
+        Matrix.rotateM(viewMatrix, 0, -yRotation, 1f, 0f, 0f)
+        Matrix.rotateM(viewMatrix, 0, -xRotation, 0f, 1f, 0f)
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
         skyboxProgram.useProgram()
         skyboxProgram.setUniforms(viewProjectionMatrix, skyboxTexture)
@@ -140,6 +156,8 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
         blueParticleShooter.addParticles(particleSystem, currentTime, PARTICLES_COUNT)
 
         Matrix.setIdentityM(viewMatrix, 0)
+        Matrix.rotateM(viewMatrix, 0, -yRotation, 1f, 0f, 0f)
+        Matrix.rotateM(viewMatrix, 0, -xRotation, 0f, 1f, 0f)
         Matrix.translateM(viewMatrix, 0, 0f, -1.5f, -5f)
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 

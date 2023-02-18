@@ -8,6 +8,7 @@ import android.opengl.GLES20.GL_ONE
 import android.opengl.GLES20.glBlendFunc
 import android.opengl.GLES20.glClear
 import android.opengl.GLES20.glClearColor
+import android.opengl.GLES20.glDisable
 import android.opengl.GLES20.glEnable
 import android.opengl.GLES20.glViewport
 import android.opengl.GLSurfaceView
@@ -16,6 +17,8 @@ import anonymous.gl.R
 import anonymous.gl.particles.objects.ParticleShooter
 import anonymous.gl.particles.objects.ParticleSystem
 import anonymous.gl.particles.programs.ParticleShaderProgram
+import anonymous.gl.programs.SkyboxShaderProgram
+import anonymous.gl.skybox.objects.Skybox
 import anonymous.gl.utils.MatrixHelper
 import anonymous.gl.utils.TextureHelper
 import anonymous.gl.utils.geometry.Point
@@ -28,6 +31,7 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
     companion object {
         private const val angleVarianceInDegrees: Float = 5f
         private const val speedVariance = 1f
+        private const val PARTICLES_COUNT = 1
     }
 
     private val projectionMatrix = FloatArray(16)
@@ -43,6 +47,10 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var texture: Int = 0
 
     private var globalStartTime: Long = 0L
+
+    private lateinit var skyboxProgram: SkyboxShaderProgram
+    private lateinit var skybox: Skybox
+    private var skyboxTexture = 0
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
@@ -77,6 +85,24 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
             speedVariance,
         )
         texture = TextureHelper.loadTexture(context, R.drawable.particle_texture)
+
+        skyboxProgram = SkyboxShaderProgram(
+            context,
+            vertexShaderId = R.raw.skybox_vertex_shader,
+            fragmentShaderId = R.raw.skybox_fragment_shader,
+        )
+        skybox = Skybox()
+        skyboxTexture = TextureHelper.loadCubeMap(
+            context,
+            intArrayOf(
+                R.drawable.left,
+                R.drawable.right,
+                R.drawable.bottom,
+                R.drawable.top,
+                R.drawable.front,
+                R.drawable.back,
+            )
+        )
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -89,23 +115,42 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
             1f,
             10f,
         )
-        Matrix.setIdentityM(viewMatrix, 0)
-        Matrix.translateM(viewMatrix, 0, 0f, -1.5f, -5f)
-        Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
     }
 
     override fun onDrawFrame(gl: GL10?) {
         glClear(GL_COLOR_BUFFER_BIT)
+        drawSkybox()
+        drawParticles()
+    }
 
+    private fun drawSkybox() {
+        Matrix.setIdentityM(viewMatrix, 0)
+        Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+        skyboxProgram.useProgram()
+        skyboxProgram.setUniforms(viewProjectionMatrix, skyboxTexture)
+        skybox.bindData(skyboxProgram)
+        skybox.draw()
+    }
+
+    private fun drawParticles() {
         val currentTime: Float = (System.nanoTime() - globalStartTime) / 1000000000f
 
-        redParticleShooter.addParticles(particleSystem, currentTime, 5)
-        greenParticleShooter.addParticles(particleSystem, currentTime, 5)
-        blueParticleShooter.addParticles(particleSystem, currentTime, 5)
+        redParticleShooter.addParticles(particleSystem, currentTime, PARTICLES_COUNT)
+        greenParticleShooter.addParticles(particleSystem, currentTime, PARTICLES_COUNT)
+        blueParticleShooter.addParticles(particleSystem, currentTime, PARTICLES_COUNT)
+
+        Matrix.setIdentityM(viewMatrix, 0)
+        Matrix.translateM(viewMatrix, 0, 0f, -1.5f, -5f)
+        Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_ONE, GL_ONE)
 
         particleShaderProgram.useProgram()
         particleShaderProgram.setUniforms(viewProjectionMatrix, currentTime, texture)
         particleSystem.bindData(particleShaderProgram)
         particleSystem.draw()
+
+        glDisable(GL_BLEND)
     }
 }

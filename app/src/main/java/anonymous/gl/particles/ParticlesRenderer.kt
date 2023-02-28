@@ -21,6 +21,10 @@ import android.opengl.GLES20.glEnable
 import android.opengl.GLES20.glViewport
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.opengl.Matrix.invertM
+import android.opengl.Matrix.multiplyMM
+import android.opengl.Matrix.multiplyMV
+import android.opengl.Matrix.transposeM
 import anonymous.gl.R
 import anonymous.gl.objects.Heightmap
 import anonymous.gl.particles.objects.ParticleShooter
@@ -42,6 +46,8 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
   private val viewMatrix = FloatArray(16)
   private val viewMatrixForSkybox = FloatArray(16)
   private val projectionMatrix = FloatArray(16)
+  private val modelViewMatrix = FloatArray(16)
+  private val itModelViewMatrix = FloatArray(16)
 
   private val tempMatrix = FloatArray(16)
   private val modelViewProjectionMatrix = FloatArray(16)
@@ -64,6 +70,19 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
   private var xRotation = 0f
   private var yRotation: Float = 0f
 
+  private val vectorToLight = floatArrayOf(
+    0.3f, 0.35f, -0.89f, 0f
+  )
+  private val pointLightPositions = floatArrayOf(
+    -1f, 1f, 0f, 1f,
+    0f, 1f, 0f, 1f,
+    1f, 1f, 0f, 1f
+  )
+  private val pointLightColors = floatArrayOf(
+    1f, 0.2f, 0.02f,
+    0.02f, 0.25f, 0.02f,
+    0.02f, 0.2f, 1.0f,
+  )
 
   fun handleTouchDrag(deltaX: Float, deltaY: Float) {
     xRotation += deltaX / 16f
@@ -130,9 +149,9 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
     particleTexture = TextureHelper.loadTexture(context, R.drawable.particle_texture)
     skyboxTexture = TextureHelper.loadCubeMap(
       context, intArrayOf(
-        R.drawable.left, R.drawable.right,
-        R.drawable.bottom, R.drawable.top,
-        R.drawable.front, R.drawable.back
+        R.drawable.night_left, R.drawable.night_right,
+        R.drawable.night_bottom, R.drawable.night_top,
+        R.drawable.night_front, R.drawable.night_back
       )
     )
   }
@@ -161,7 +180,20 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
     Matrix.scaleM(modelMatrix, 0, 100f, 10f, 100f)
     updateMvpMatrix()
     heightmapProgram.useProgram()
-    heightmapProgram.setUniforms(modelViewProjectionMatrix)
+    val vectorToLightInEyeSpace = FloatArray(4)
+    val pointPositionsInEyeSpace = FloatArray(12)
+    multiplyMV(vectorToLightInEyeSpace, 0, viewMatrix, 0, vectorToLight, 0)
+    multiplyMV(pointPositionsInEyeSpace, 0, viewMatrix, 0, pointLightPositions, 0)
+    multiplyMV(pointPositionsInEyeSpace, 4, viewMatrix, 0, pointLightPositions, 4)
+    multiplyMV(pointPositionsInEyeSpace, 8, viewMatrix, 0, pointLightPositions, 8)
+    heightmapProgram.setUniforms(
+      modelViewMatrix,
+      itModelViewMatrix,
+      modelViewProjectionMatrix,
+      vectorToLightInEyeSpace,
+      pointPositionsInEyeSpace,
+      pointLightColors
+    )
     heightmap.bindData(heightmapProgram)
     heightmap.draw()
   }
@@ -196,8 +228,10 @@ class ParticlesRenderer(private val context: Context) : GLSurfaceView.Renderer {
   }
 
   private fun updateMvpMatrix() {
-    Matrix.multiplyMM(tempMatrix, 0, viewMatrix, 0, modelMatrix, 0)
-    Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, tempMatrix, 0)
+    multiplyMM(modelViewMatrix, 0, viewMatrix, 0, modelMatrix, 0)
+    invertM(tempMatrix, 0, modelViewMatrix, 0)
+    transposeM(itModelViewMatrix, 0, tempMatrix, 0)
+    multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, modelViewMatrix, 0)
   }
 
   private fun updateMvpMatrixForSkybox() {
